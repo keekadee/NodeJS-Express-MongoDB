@@ -1,52 +1,36 @@
-const MongoClient = require("mongodb").MongoClient;
-const dboper = require("./operations");
+const mongoose = require("mongoose");
+const Campsite = require("./models/campsite");
 
-const url = "mongodb://localhost:27017/";
-const dbname = "nucampsite";
+const url = "mongodb://localhost:27017/nucampsite";
+const connect = mongoose.connect(url, {
+  useCreateIndex: true,
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+});
 
-MongoClient.connect(url, { useUnifiedTopology: true }).then(client => {
+connect.then(() => {
+  console.log("Connected correctly to server");
 
-    console.log('Connected correctly to server');
+  const newCampsite = new Campsite({
+    name: "React Lake Campground",
+    description: "test",
+  });
 
-  const db = client.db(dbname);
-
-  db.dropCollection('campsites')
-    .then(result => {
-        console.log('Dropped Collection:', result);
+  newCampsite
+    .save()
+    .then((campsite) => {
+      console.log(campsite);
+      return Campsite.find();
     })
-    .catch(err => console.log('No collection to drop.'));
-
-    dboper.insertDocument(db, {name: "Breadcrumb Trail Campground", description: "Test"}, 'campsites')
-    .then(result => {
-        console.log('Insert Document:', result.ops);
-
-        return dboper.findDocuments(db, 'campsites');
+    .then((campsites) => {
+      console.log(campsites);
+      return Campsite.deleteMany();
     })
-.then(docs => {
-        console.log('Found Documents:', docs);
-
-        return dboper.updateDocument(db, { name: "Breadcrumb Trail Campground" },
-            { description: "Updated Test Description" }, 'campsites');
+    .then(() => {
+      return mongoose.connection.close();
     })
-    .then(result => {
-        console.log('Updated Document Count:', result.result.nModified);
-
-        return dboper.findDocuments(db, 'campsites');
-    })
-    .then(docs => {
-        console.log('Found Documents:', docs);
-
-        return dboper.removeDocument(db, { name: "Breadcrumb Trail Campground" },
-            'campsites');
-    })
-    .then(result => {
-        console.log('Deleted Document Count:', result.deletedCount);
-
-         return client.close();
-    })
-    .catch(err => {
-        console.log(err);
-        client.close();
+    .catch((err) => {
+      console.log(err);
+      mongoose.connection.close();
     });
-})
-.catch(err => console.log(err));
+});
